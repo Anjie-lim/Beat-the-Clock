@@ -116,7 +116,7 @@
   <main>
     <section id="welcome" class="screen active">
       <div class="hero">
-        <div class="eyebrow">20 questions · first 10 at 10 seconds, next 10 at 7 seconds</div>
+        <div class="eyebrow">20 questions · first 10 at 15 seconds, next 10 at 10 seconds</div>
         <h1>Can you read<br>the clock?</h1>
         <p>Look at each analog clock and enter the exact time. Stay focused: the next clock appears when you submit or the timer runs out.</p>
       </div>
@@ -135,7 +135,7 @@
       </div>
       <div class="instructions">
         <div class="instruction"><div class="icon">◷</div><div><b>Read the hands</b><span>Use the hour and minute hands to identify the time.</span></div></div>
-        <div class="instruction"><div class="icon">⌁</div><div><b>Answer quickly</b><span>Questions 1–10 have a 10-second limit. Questions 11–20 have a 7-second limit. A timeout counts as unanswered.</span></div></div>
+        <div class="instruction"><div class="icon">⌁</div><div><b>Answer quickly</b><span>Questions 1–10 have a 15-second limit. Questions 11–20 have a 10-second limit. A timeout counts as unanswered.</span></div></div>
         <div class="instruction"><div class="icon">✓</div><div><b>Finish all 20</b><span>Your results are recorded privately; no score is shown on screen.</span></div></div>
       </div>
     </section>
@@ -160,7 +160,7 @@
     <section id="game" class="screen">
       <div class="topline">
         <div><div class="eyebrow">Question <span id="questionNumber">1</span> of 20</div><div class="progress-track" style="width:min(320px,58vw);margin-bottom:0"><div id="progressFill" class="progress-fill"></div></div></div>
-        <div class="pill" id="roundBadge">ROUND 1 · 10-SECOND LIMIT</div>
+        <div class="pill" id="roundBadge">ROUND 1 · 15-SECOND LIMIT</div>
       </div>
       <div class="panel">
         <div class="game-grid">
@@ -168,7 +168,7 @@
             <svg id="clockSvg" viewBox="0 0 300 300" role="img" aria-label="Analog clock showing a time"></svg>
           </div>
           <div class="answer-panel">
-            <div class="timer-row"><span class="answer-label">TIME REMAINING</span><span id="timerNumber" class="timer-number">10.0s</span></div>
+            <div class="timer-row"><span class="answer-label">TIME REMAINING</span><span id="timerNumber" class="timer-number">15.0s</span></div>
             <div class="timer-track"><div id="timerFill" class="timer-fill"></div></div>
             <div>
               <label class="answer-label" for="answerInput">What time does the clock show?</label>
@@ -196,7 +196,7 @@
       </div>
     </section>
   </main>
-  <footer>20 questions · 10 seconds for Q1–10 · 7 seconds for Q11–20 · 12-hour format</footer>
+  <footer>20 questions · 10 seconds for Q1–10 · 10 seconds for Q11–20 · 12-hour format</footer>
 </div>
 
 <script>
@@ -204,8 +204,8 @@
   "use strict";
   const QUESTION_COUNT = 20;
   const FIRST_ROUND_COUNT = 10;
-  const FIRST_ROUND_MS = 10000;
-  const SECOND_ROUND_MS = 7000;
+  const FIRST_ROUND_MS = 15000;
+  const SECOND_ROUND_MS = 10000;
 
   // Deployed Google Apps Script web app endpoint.
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztdKPu-ioLhJbE_d8HgEVdXzQ8VBHW_aDhAaSfBvHyvUASLjy5R1vdJp1-5eJf6DAe8A/exec";
@@ -275,8 +275,8 @@
     }
     // Balance the three analog-face styles across each game, then randomize their order.
     const faceStyles = shuffle([
-      ...Array(7).fill("arabic"),
-      ...Array(7).fill("roman"),
+      ...Array().fill("arabic"),
+      ...Array().fill("roman"),
       ...Array(6).fill("minimal")
     ]);
     return shuffle(list).map((q, i) => ({
@@ -297,7 +297,7 @@
     svg.setAttribute("viewBox", "0 0 300 300");
     const cx = 150, cy = 150, radius = 132;
     const roman = ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"];
-    svg.appendChild(svgEl("circle", {cx, cy, r:radius, fill:"#fff", stroke:faceStyle === "roman" ? "#b9a77a" : "#d7dce7", "stroke-width":3}));
+    svg.appendChild(svgEl("circle", {cx, cy, r:radius, fill:"#fff", stroke:faceStyle === "roman" ? "#b9a7a" : "#d7dce7", "stroke-width":3}));
     svg.appendChild(svgEl("circle", {cx, cy, r:radius-7, fill:"none", stroke:faceStyle === "roman" ? "#eee4ca" : "#eef0f5", "stroke-width":1}));
     for (let i=0; i<60; i++) {
       const angle = (i * 6 - 90) * Math.PI / 180;
@@ -360,8 +360,8 @@
     $("progressFill").style.width = `${(questionIndex / QUESTION_COUNT) * 100}%`;
     const currentLimit = timeLimitForQuestion(questionIndex);
     $("roundBadge").textContent = questionIndex < FIRST_ROUND_COUNT
-      ? "ROUND 1 · 10-SECOND LIMIT"
-      : "ROUND 2 · 7-SECOND LIMIT";
+      ? "ROUND 1 · 15-SECOND LIMIT"
+      : "ROUND 2 · 10-SECOND LIMIT";
     $("answerInput").value = "";
     $("answerInput").disabled = false;
     $("submitAnswer").disabled = false;
