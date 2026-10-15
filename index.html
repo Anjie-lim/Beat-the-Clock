@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>Beat the Clock | Analog Time Challenge</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: #131b2f;
+    --panel-2: #1a2540;
+    --text: #f4f7ff;
+    --muted: #a8b4ce;
+    --accent: #86efac;
+    --accent-dark: #123d2b;
+    --line: rgba(210, 224, 255, .14);
+    --danger: #fda4af;
+    --gold: #fcd34d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    background: radial-gradient(ellipse at top, #1c2b4d 0%, var(--bg) 58%);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  button, input { font: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+  .shell { width: min(920px, 100%); margin: 0 auto; padding: 22px 16px 48px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:24px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.02em; }
+  .brand-mark { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; background:var(--accent); color:#092015; font-size:21px; }
+  .pill { border:1px solid var(--line); border-radius:999px; padding:7px 11px; color:var(--muted); font-size:12px; white-space:nowrap; }
+  .screen { display:none; }
+  .screen.active { display:block; animation:appear .22s ease-out; }
+  @keyframes appear { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+  .hero { text-align:center; padding: clamp(18px, 5vw, 48px) 0 26px; }
+  .eyebrow { color:var(--accent); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.16em; }
+  h1 { font-size:clamp(34px, 7vw, 58px); line-height:1.03; letter-spacing:-.045em; margin:13px 0 15px; }
+  h2 { font-size:clamp(24px, 4vw, 34px); letter-spacing:-.025em; margin:0 0 10px; }
+  p { color:var(--muted); line-height:1.65; }
+  .hero p { max-width:600px; margin:0 auto 25px; font-size:16px; }
+  .panel { background:rgba(19,27,47,.88); border:1px solid var(--line); border-radius:22px; padding:clamp(18px, 4vw, 30px); box-shadow:0 18px 55px rgba(0,0,0,.18); }
+  .narrow { max-width:590px; margin:0 auto; }
+  .field { display:block; margin:16px 0; }
+  .field span { display:block; color:#e4eaff; font-size:13px; font-weight:700; margin-bottom:8px; }
+  input[type="text"], input[type="email"] { width:100%; border:1px solid #3a4866; border-radius:12px; background:#0e1629; color:var(--text); padding:14px 15px; }
+  .btn { border:0; border-radius:12px; padding:13px 19px; font-weight:800; transition:transform .12s, filter .12s; }
+  .btn:hover { filter:brightness(1.06); transform:translateY(-1px); }
+  .btn-primary { color:#092015; background:var(--accent); }
+  .btn-secondary { color:var(--text); background:var(--panel-2); border:1px solid var(--line); }
+  .btn-full { width:100%; margin-top:8px; }
+  .fine { font-size:12px; color:var(--muted); }
+  .instructions { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:24px 0; }
+  .instruction { background:rgba(255,255,255,.035); border:1px solid var(--line); border-radius:14px; padding:15px; }
+  .instruction b { display:block; margin:7px 0 4px; }
+  .instruction span { font-size:12px; color:var(--muted); line-height:1.5; }
+  .icon { font-size:22px; }
+  .topline { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+  .progress-track { height:7px; border-radius:99px; background:#26334e; overflow:hidden; margin:12px 0 22px; }
+  .progress-fill { height:100%; width:0; background:var(--accent); transition:width .2s linear; }
+  .game-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(240px,.8fr); gap:22px; align-items:center; }
+  .clock-wrap { background:#f7f8fc; border-radius:20px; padding:clamp(12px,3vw,25px); display:grid; place-items:center; }
+  #clockSvg { width:100%; max-width:370px; display:block; }
+  .answer-panel { display:flex; flex-direction:column; gap:14px; }
+  .timer-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .timer-number { font-size:34px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:-.04em; }
+  .timer-number.urgent { color:var(--danger); }
+  .timer-track { height:8px; border-radius:99px; background:#2a3650; overflow:hidden; }
+  .timer-fill { height:100%; width:100%; background:var(--accent); transform-origin:left; }
+  .answer-label { font-weight:800; font-size:14px; }
+  .answer-row { display:flex; gap:8px; }
+  .answer-row input { min-width:0; flex:1; font-size:20px; font-weight:800; letter-spacing:.04em; text-align:center; }
+  .answer-row .btn { padding-inline:16px; }
+  .hint { font-size:12px; margin:0; }
+  .status { min-height:20px; font-size:12px; color:var(--muted); }
+  .result-score { font-size:clamp(48px, 10vw, 76px); line-height:1; font-weight:900; letter-spacing:-.06em; margin:16px 0 8px; }
+  .result-score span { color:var(--accent); }
+  .result-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:24px 0; }
+  .stat { background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:14px; padding:15px; }
+  .stat strong { display:block; font-size:24px; margin-bottom:3px; }
+  .stat small { color:var(--muted); }
+  .table-wrap { overflow-x:auto; margin:22px 0; }
+  table { width:100%; border-collapse:collapse; font-size:13px; min-width:560px; }
+  th,td { padding:12px 10px; border-bottom:1px solid var(--line); text-align:left; }
+  th { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+  .correct { color:var(--accent); font-weight:800; }
+  .incorrect { color:var(--danger); font-weight:800; }
+  .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  .notice { border:1px solid rgba(252,211,77,.35); background:rgba(252,211,77,.07); color:#fce7a1; padding:13px 14px; border-radius:12px; font-size:13px; line-height:1.55; }
+  .success-notice { border-color:rgba(134,239,172,.35); background:rgba(134,239,172,.07); color:#bbf7d0; }
+  footer { text-align:center; color:#7e8ba8; font-size:11px; padding-top:25px; }
+  @media (max-width:680px) {
+    .instructions { grid-template-columns:1fr; }
+    .instruction { display:flex; align-items:center; gap:12px; }
+    .instruction .icon { width:34px; text-align:center; flex-shrink:0; }
+    .instruction b { margin:0 0 3px; }
+    .game-grid { grid-template-columns:1fr; }
+    .clock-wrap { max-width:420px; width:100%; margin:0 auto; }
+    #clockSvg { max-width:310px; }
+    .answer-panel { max-width:480px; width:100%; margin:0 auto; }
+    .topline { align-items:flex-start; }
+    .result-grid { grid-template-columns:1fr 1fr; }
+  }
+  @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand"><div class="brand-mark">◷</div><span>BEAT THE CLOCK</span></div>
+    <div class="pill">ANALOG TIME CHALLENGE</div>
+  </header>
+
+  <main>
+    <section id="welcome" class="screen active">
+      <div class="hero">
+        <div class="eyebrow">20 questions · first 10 at 10 seconds, next 10 at 7 seconds</div>
+        <h1>Can you read<br>the clock?</h1>
+        <p>Look at each analog clock and enter the exact time. Stay focused: the next clock appears when you submit or the timer runs out.</p>
+      </div>
+      <div class="panel narrow">
+        <h2>Before you begin</h2>
+        <p class="fine">Enter your details so your result can be associated with your attempt.</p>
+        <form id="registrationForm">
+          <label class="field"><span>Full name</span><input id="playerName" name="name" type="text" autocomplete="name" maxlength="100" required placeholder="Enter your full name"></label>
+          <label class="field"><span>Email address</span><input id="playerEmail" name="email" type="email" autocomplete="email" maxlength="160" required placeholder="you@example.com"></label>
+          <label style="display:flex;gap:10px;align-items:flex-start;margin:18px 0;color:var(--muted);font-size:12px;line-height:1.5">
+            <input id="consent" type="checkbox" required style="margin-top:3px">
+            <span>I understand that my name, email, answers, score, and response times will be recorded for this assessment.</span>
+          </label>
+          <button class="btn btn-primary btn-full" type="submit">Continue to instructions →</button>
+        </form>
+      </div>
+      <div class="instructions">
+        <div class="instruction"><div class="icon">◷</div><div><b>Read the hands</b><span>Use the hour and minute hands to identify the time.</span></div></div>
+        <div class="instruction"><div class="icon">⌁</div><div><b>Answer quickly</b><span>Questions 1–10 have a 10-second limit. Questions 11–20 have a 7-second limit. A timeout counts as unanswered.</span></div></div>
+        <div class="instruction"><div class="icon">✓</div><div><b>Finish all 20</b><span>Your results are recorded privately; no score is shown on screen.</span></div></div>
+      </div>
+    </section>
+
+    <section id="practice" class="screen">
+      <div class="panel narrow">
+        <div class="eyebrow">Quick practice · Untimed</div>
+        <h2>Get familiar with the clock</h2>
+        <p>This example is not scored. The short hand shows the hour; the long hand shows the minutes. Enter the time using hours and minutes, such as <b>3:27</b>.</p>
+        <div class="clock-wrap" style="max-width:300px;margin:18px auto">
+          <svg id="practiceClock" viewBox="0 0 300 300" role="img" aria-label="Practice analog clock"></svg>
+        </div>
+        <label class="field"><span>Your practice answer</span><input id="practiceAnswer" type="text" inputmode="numeric" maxlength="5" placeholder="H:MM" autocomplete="off"></label>
+        <p id="practiceFeedback" class="status" aria-live="polite">Try reading the clock, then check your answer.</p>
+        <div class="actions">
+          <button id="checkPractice" class="btn btn-secondary" type="button">Check practice answer</button>
+          <button id="startGame" class="btn btn-primary" type="button">Start 20-question challenge →</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="game" class="screen">
+      <div class="topline">
+        <div><div class="eyebrow">Question <span id="questionNumber">1</span> of 20</div><div class="progress-track" style="width:min(320px,58vw);margin-bottom:0"><div id="progressFill" class="progress-fill"></div></div></div>
+        <div class="pill" id="roundBadge">ROUND 1 · 10-SECOND LIMIT</div>
+      </div>
+      <div class="panel">
+        <div class="game-grid">
+          <div class="clock-wrap">
+            <svg id="clockSvg" viewBox="0 0 300 300" role="img" aria-label="Analog clock showing a time"></svg>
+          </div>
+          <div class="answer-panel">
+            <div class="timer-row"><span class="answer-label">TIME REMAINING</span><span id="timerNumber" class="timer-number">10.0s</span></div>
+            <div class="timer-track"><div id="timerFill" class="timer-fill"></div></div>
+            <div>
+              <label class="answer-label" for="answerInput">What time does the clock show?</label>
+              <div class="answer-row" style="margin-top:9px">
+                <input id="answerInput" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="H:MM" aria-label="Enter the time">
+                <button id="submitAnswer" class="btn btn-primary" type="button">Submit</button>
+              </div>
+            </div>
+            <p class="hint">Use 12-hour format, for example <b>3:27</b> or <b>11:42</b>. AM/PM is not required.</p>
+            <div id="answerStatus" class="status" aria-live="polite">Your time starts now.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" class="screen">
+      <div class="panel narrow" style="text-align:center">
+        <div class="eyebrow">Challenge submitted</div>
+        <div style="font-size:54px;margin:18px 0 10px" aria-hidden="true">✓</div>
+        <h2>Thank you for participating.</h2>
+        <p>Your responses have been saved for assessment. Your score will not be displayed here.</p>
+        <div id="submissionNotice" class="notice" role="status">
+          Your submission status will appear here.
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer>20 questions · 10 seconds for Q1–10 · 7 seconds for Q11–20 · 12-hour format</footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const QUESTION_COUNT = 20;
+  const FIRST_ROUND_COUNT = 10;
+  const FIRST_ROUND_MS = 10000;
+  const SECOND_ROUND_MS = 7000;
+
+  // Deployed Google Apps Script web app endpoint.
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztdKPu-ioLhJbE_d8HgEVdXzQ8VBHW_aDhAaSfBvHyvUASLjy5R1vdJp1-5eJf6DAe8A/exec";
+
+  const $ = id => document.getElementById(id);
+  const screens = ["welcome", "practice", "game", "results"];
+  let player = { name: "", email: "" };
+  let questions = [];
+  let answers = [];
+  let questionIndex = 0;
+  let questionStartedAt = 0;
+  let deadline = 0;
+  let timerFrame = null;
+  let locked = false;
+  let attemptId = "";
+  let attemptStartedAt = "";
+  let attemptFinishedAt = "";
+  let attemptLocked = false;
+
+  function showScreen(id) {
+    screens.forEach(s => $(s).classList.toggle("active", s === id));
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
+  function randomInt(max) { return Math.floor(Math.random() * max); }
+  function timeLimitForQuestion(index) {
+    return index < FIRST_ROUND_COUNT ? FIRST_ROUND_MS : SECOND_ROUND_MS;
+  }
+  function shuffle(array) {
+    const a = array.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = randomInt(i + 1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function formatTime(totalMinutes) {
+    const h = Math.floor(totalMinutes / 60) % 12 || 12;
+    const m = totalMinutes % 60;
+    return `${h}:${String(m).padStart(2, "0")}`;
+  }
+  function parseTime(value) {
+    const m = String(value || "").trim().match(/^(\d{1,2})\s*:\s*(\d{1,2})$/);
+    if (!m) return null;
+    const h = Number(m[1]), min = Number(m[2]);
+    if (h < 1 || h > 12 || min < 0 || min > 59) return null;
+    return `${h}:${String(min).padStart(2, "0")}`;
+  }
+  function timeMinutes(t) {
+    const [h, m] = t.split(":").map(Number);
+    return ((h % 12) * 60) + m;
+  }
+
+  // Generate 20 unique clock answers per attempt. Every minute value avoids
+  // multiples of five, and no 12-hour time repeats within the same game.
+  function makeQuestions() {
+    const used = new Set();
+    const minutePool = Array.from({length: 60}, (_, i) => i).filter(m => m % 5 !== 0);
+    const list = [];
+    while (list.length < QUESTION_COUNT) {
+      const hour = 1 + randomInt(12);
+      const minute = minutePool[randomInt(minutePool.length)];
+      const totalMinutes = ((hour % 12) * 60) + minute;
+      if (used.has(totalMinutes)) continue;
+      used.add(totalMinutes);
+      list.push({ targetMinutes: totalMinutes, target: formatTime(totalMinutes) });
+    }
+    // Balance the three analog-face styles across each game, then randomize their order.
+    const faceStyles = shuffle([
+      ...Array(7).fill("arabic"),
+      ...Array(7).fill("roman"),
+      ...Array(6).fill("minimal")
+    ]);
+    return shuffle(list).map((q, i) => ({
+      ...q,
+      faceStyle: faceStyles[i],
+      displayNumber: i + 1,
+      timeLimitMs: timeLimitForQuestion(i)
+    }));
+  }
+
+  function svgEl(tag, attrs = {}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, String(v)));
+    return el;
+  }
+  function drawClock(svg, totalMinutes, faceStyle = "arabic") {
+    svg.replaceChildren();
+    svg.setAttribute("viewBox", "0 0 300 300");
+    const cx = 150, cy = 150, radius = 132;
+    const roman = ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"];
+    svg.appendChild(svgEl("circle", {cx, cy, r:radius, fill:"#fff", stroke:faceStyle === "roman" ? "#b9a77a" : "#d7dce7", "stroke-width":3}));
+    svg.appendChild(svgEl("circle", {cx, cy, r:radius-7, fill:"none", stroke:faceStyle === "roman" ? "#eee4ca" : "#eef0f5", "stroke-width":1}));
+    for (let i=0; i<60; i++) {
+      const angle = (i * 6 - 90) * Math.PI / 180;
+      const major = i % 5 === 0;
+      // Minimalist faces use longer hour indices; other faces retain the full minute track.
+      const r1 = radius - (major ? (faceStyle === "minimal" ? 22 : 17) : 10), r2 = radius - 5;
+      svg.appendChild(svgEl("line", {
+        x1:cx + Math.cos(angle)*r1, y1:cy + Math.sin(angle)*r1,
+        x2:cx + Math.cos(angle)*r2, y2:cy + Math.sin(angle)*r2,
+        stroke: major ? (faceStyle === "roman" ? "#786747" : "#263149") : "#9aa4b7",
+        "stroke-width": major ? (faceStyle === "minimal" ? 3.5 : 2.7) : 1.1,
+        "stroke-linecap":"round"
+      }));
+    }
+    if (faceStyle !== "minimal") {
+      for (let n=1; n<=12; n++) {
+        const angle = (n*30 - 90) * Math.PI / 180;
+        const r = 98;
+        const txt = svgEl("text", {
+          x:cx + Math.cos(angle)*r, y:cy + Math.sin(angle)*r + 7,
+          "text-anchor":"middle", "font-size": faceStyle === "roman" ? 16 : 19,
+          "font-weight":700, fill:faceStyle === "roman" ? "#5e4d30" : "#202b40",
+          "font-family":faceStyle === "roman" ? "Georgia, 'Times New Roman', serif" : "Arial, sans-serif"
+        });
+        txt.textContent = faceStyle === "roman" ? roman[n % 12] : n;
+        svg.appendChild(txt);
+      }
+    }
+    const minute = totalMinutes % 60;
+    const hour = Math.floor(totalMinutes / 60) % 12;
+    const minuteAngle = (minute * 6 - 90) * Math.PI / 180;
+    // The short hand advances continuously: at 10:55 it is 2.5 degrees before 11,
+    // not exactly on the 11 marker. Do not round it to the nearest hour.
+    const hourAngle = ((hour + minute/60) * 30 - 90) * Math.PI / 180;
+    // Draw the longer minute hand first, then the shorter hour hand on top.
+    // This keeps the hour-hand tip visible when both hands nearly overlap (e.g. 10:55).
+    svg.appendChild(svgEl("line", {
+      x1:cx, y1:cy, x2:cx + Math.cos(minuteAngle)*96, y2:cy + Math.sin(minuteAngle)*96,
+      stroke:"#64748b", "stroke-width":5.5, "stroke-linecap":"round"
+    }));
+    svg.appendChild(svgEl("line", {
+      x1:cx, y1:cy, x2:cx + Math.cos(hourAngle)*61, y2:cy + Math.sin(hourAngle)*61,
+      stroke:faceStyle === "roman" ? "#5e4d30" : "#101827", "stroke-width":7, "stroke-linecap":"round"
+    }));
+    svg.appendChild(svgEl("circle", {cx, cy, r:7, fill:"#86efac", stroke:"#101827", "stroke-width":2}));
+    const styleLabel = faceStyle === "roman" ? "Roman numeral" : faceStyle === "minimal" ? "minimalist marker" : "Arabic numeral";
+    svg.setAttribute("aria-label", `${styleLabel} analog clock. Read the hour and minute hands.`);
+  }
+
+  function resetTimerVisual(limitMs) {
+    $("timerNumber").textContent = `${(limitMs / 1000).toFixed(1)}s`;
+    $("timerNumber").classList.remove("urgent");
+    $("timerFill").style.width = "100%";
+    $("timerFill").style.background = "var(--accent)";
+  }
+  function renderQuestion() {
+    locked = false;
+    const q = questions[questionIndex];
+    $("questionNumber").textContent = questionIndex + 1;
+    $("progressFill").style.width = `${(questionIndex / QUESTION_COUNT) * 100}%`;
+    const currentLimit = timeLimitForQuestion(questionIndex);
+    $("roundBadge").textContent = questionIndex < FIRST_ROUND_COUNT
+      ? "ROUND 1 · 10-SECOND LIMIT"
+      : "ROUND 2 · 7-SECOND LIMIT";
+    $("answerInput").value = "";
+    $("answerInput").disabled = false;
+    $("submitAnswer").disabled = false;
+    $("answerStatus").textContent = "Your time starts now.";
+    $("answerStatus").style.color = "var(--muted)";
+    drawClock($("clockSvg"), q.targetMinutes, q.faceStyle);
+    resetTimerVisual(currentLimit);
+    questionStartedAt = performance.now();
+    deadline = questionStartedAt + currentLimit;
+    $("answerInput").focus({preventScroll:true});
+    cancelAnimationFrame(timerFrame);
+    updateTimer();
+  }
+  function updateTimer() {
+    if (locked) return;
+    const remaining = Math.max(0, deadline - performance.now());
+    const seconds = remaining / 1000;
+    $("timerNumber").textContent = `${seconds.toFixed(1)}s`;
+    $("timerNumber").classList.toggle("urgent", seconds <= 2);
+    const limitMs = timeLimitForQuestion(questionIndex);
+    $("timerFill").style.width = `${(remaining / limitMs) * 100}%`;
+    if (remaining <= 0) {
+      recordAnswer("", true);
+      return;
+    }
+    timerFrame = requestAnimationFrame(updateTimer);
+  }
+  function recordAnswer(raw, timedOut) {
+    if (locked) return;
+    locked = true;
+    cancelAnimationFrame(timerFrame);
+    const elapsed = Math.min(timeLimitForQuestion(questionIndex), Math.max(0, performance.now() - questionStartedAt));
+    const normalized = parseTime(raw);
+    const target = questions[questionIndex].target;
+    const correct = !timedOut && normalized !== null && normalized === target;
+    answers.push({
+      questionNumber: questionIndex + 1,
+      targetTime: target,
+      rawAnswer: raw,
+      normalizedAnswer: normalized || "",
+      correct,
+      timedOut,
+      responseMs: Math.round(elapsed),
+      responseSeconds: (elapsed / 1000).toFixed(2)
+    });
+    $("answerInput").disabled = true;
+    $("submitAnswer").disabled = true;
+    $("answerStatus").textContent = timedOut ? "Time is up — recorded as unanswered." : (correct ? "Answer recorded." : "Answer recorded.");
+    $("answerStatus").style.color = correct ? "var(--accent)" : "var(--danger)";
+    $("progressFill").style.width = `${(answers.length / QUESTION_COUNT) * 100}%`;
+    setTimeout(() => {
+      questionIndex++;
+      if (questionIndex >= QUESTION_COUNT) finishGame();
+      else renderQuestion();
+    }, 180);
+  }
+
+  function startGame() {
+    const emailKey = `beatClockCompleted:${player.email.trim().toLowerCase()}`;
+    if (attemptLocked || localStorage.getItem(emailKey)) {
+      showScreen("results");
+      $("submissionNotice").textContent = "An attempt has already been completed for this email address in this browser.";
+      return;
+    }
+    questions = makeQuestions();
+    answers = [];
+    questionIndex = 0;
+    attemptId = `CLK-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
+    attemptStartedAt = new Date().toISOString();
+    attemptFinishedAt = "";
+    attemptLocked = true;
+    try { sessionStorage.setItem("beatClockActiveAttempt", attemptId); } catch (e) {}
+    showScreen("game");
+    renderQuestion();
+  }
+
+  function finishGame() {
+    cancelAnimationFrame(timerFrame);
+    attemptFinishedAt = new Date().toISOString();
+    const emailKey = `beatClockCompleted:${player.email.trim().toLowerCase()}`;
+    const payload = {
+      attemptId, player, attemptStartedAt, attemptFinishedAt,
+      answers, totalQuestions: QUESTION_COUNT, gameVersion: "v4-20q"
+    };
+    $("submissionNotice").textContent = "Submitting your responses securely. Please keep this page open until the status updates.";
+    showScreen("results");
+    submitToEndpoint(payload);
+  }
+
+  let submissionFrame = null;
+  let submissionForm = null;
+  let submissionPayload = null;
+  let submissionTimeout = null;
+  function submitToEndpoint(payload) {
+    if (!SCRIPT_URL.trim()) {
+      $("submissionNotice").textContent = "Submission is not configured. Please contact the administrator.";
+      return;
+    }
+    submissionPayload = payload;
+    submissionFrame = document.createElement("iframe");
+    submissionFrame.name = "clock_submit_frame";
+    submissionFrame.title = "Submission status";
+    submissionFrame.hidden = true;
+    document.body.appendChild(submissionFrame);
+    submissionForm = document.createElement("form");
+    submissionForm.method = "POST";
+    submissionForm.action = SCRIPT_URL;
+    submissionForm.target = submissionFrame.name;
+    submissionForm.hidden = true;
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "payload";
+    input.value = JSON.stringify(payload);
+    submissionForm.appendChild(input);
+    document.body.appendChild(submissionForm);
+    submissionForm.submit();
+    // Do not leave participants waiting indefinitely if the iframe response is blocked.
+    if (submissionTimeout) clearTimeout(submissionTimeout);
+    submissionTimeout = setTimeout(() => {
+      if ($("submissionNotice").textContent.includes("Submitting your responses")) {
+        $("submissionNotice").textContent = "We haven't received confirmation yet. Your submission may still be processing. Please contact the administrator before retrying.";
+      }
+    }, 25000);
+  }
+
+  window.addEventListener("message", event => {
+    const data = event.data;
+    if (!data || data.type !== "beat-clock-backend") return;
+    if (submissionTimeout) { clearTimeout(submissionTimeout); submissionTimeout = null; }
+    if (submissionForm) submissionForm.remove();
+    if (submissionFrame) submissionFrame.remove();
+    submissionForm = null;
+    submissionFrame = null;
+    const emailKey = `beatClockCompleted:${player.email.trim().toLowerCase()}`;
+    if (data.status === "accepted") {
+      try {
+        localStorage.setItem(emailKey, JSON.stringify({
+          completedAt: attemptFinishedAt,
+          attemptId: attemptId
+        }));
+      } catch (e) {}
+      $("submissionNotice").textContent = "Submission received. Thank you for participating.";
+    } else if (data.status === "duplicate") {
+      $("submissionNotice").textContent = "A submission already exists for this email address. No new attempt was saved.";
+    } else {
+      $("submissionNotice").textContent = data.message ? `Submission failed: ${data.message}` : "We couldn't confirm that your responses were saved. Please contact the administrator before trying again.";
+    }
+  });
+
+  $("registrationForm").addEventListener("submit", event => {
+    event.preventDefault();
+    if (!$("registrationForm").reportValidity()) return;
+    player = { name: $("playerName").value.trim(), email: $("playerEmail").value.trim() };
+    if (!player.name || !player.email || !$("consent").checked) return;
+    const completedKey = `beatClockCompleted:${player.email.trim().toLowerCase()}`;
+    if (localStorage.getItem(completedKey)) {
+      $("submissionNotice").textContent = "An attempt has already been completed for this email address in this browser.";
+      showScreen("results");
+      return;
+    }
+    drawClock($("practiceClock"), 3 * 60 + 27);
+    $("practiceAnswer").value = "";
+    $("practiceFeedback").textContent = "Try reading the clock, then check your answer.";
+    showScreen("practice");
+  });
+  $("checkPractice").addEventListener("click", () => {
+    const val = parseTime($("practiceAnswer").value);
+    $("practiceFeedback").textContent = val === "3:27" ? "Correct — the clock shows 3:27. You're ready!" : "Not quite. Read the short hand for the hour and the long hand for the minutes. The practice clock shows 3:27.";
+    $("practiceFeedback").style.color = val === "3:27" ? "var(--accent)" : "var(--gold)";
+  });
+  $("startGame").addEventListener("click", startGame);
+  $("submitAnswer").addEventListener("click", () => recordAnswer($("answerInput").value, false));
+  $("answerInput").addEventListener("keydown", event => {
+    if (event.key === "Enter") { event.preventDefault(); $("submitAnswer").click(); }
+  });
+  drawClock($("practiceClock"), 3 * 60 + 27);
+})();
+</script>
+</body>
+</html>
